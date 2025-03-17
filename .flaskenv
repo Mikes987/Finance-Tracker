@@ -1,0 +1,1 @@
+FLASK_APP=finance_tracker.py

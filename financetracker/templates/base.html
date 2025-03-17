@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        {% if title %}
+            <title>{{ title }}</title>
+        {% else %}
+            <title>No Title</title>
+        {% endif %}
+    </head>
+    <body>
+        <nav>
+            <a href="/index.html">Home</a>
+        </nav>
+        <hr>
+        {% block content %}{% endblock %}
+    </body>
+</html>
