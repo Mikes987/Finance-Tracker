@@ -10,4 +10,6 @@
     {{ form.password }}<br><br>
     {{ form.submit }}
 </form>
+<br>
+<p>Not a user yet? <a href="{{ url_for('auth.register') }}"> Register here!</a></p>
 {% endblock %}
