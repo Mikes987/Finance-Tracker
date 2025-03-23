@@ -15,3 +15,8 @@ build/
 *.egg-info/
 
 .env
+
+*.db
+migrations/
+
+notebooks/
