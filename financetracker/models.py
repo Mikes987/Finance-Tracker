@@ -5,6 +5,9 @@ import sqlalchemy as sa
 import sqlalchemy.orm as so
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
+from flask import current_app
+import jwt
+from datetime import datetime, timedelta
 
 
 class User(db.Model, UserMixin):
@@ -26,12 +29,32 @@ class User(db.Model, UserMixin):
                 return user
     
     @staticmethod
+    def get_user_by_mail(email: str):
+        return db.session.scalar(sa.select(User).where(User.email==email))
+    
+    @staticmethod
     def create_user(username:str, password: str, email:str):
-        print("Am I going through here?")
-        password_hash = generate_password_hash(password)
-        user = User(username=username, password_hash=password_hash, email=email)
+        user = User(username=username, email=email)
+        user.create_password(password)
         db.session.add(user)
         db.session.commit()
+    
+    def create_password(self, password: str):
+        password_hash = generate_password_hash(password)
+        self.password_hash = password_hash
+    
+    def request_password_token(self, duration=600):
+        token = jwt.encode({'reset_password': self.id, 'exp': datetime.now() + timedelta(seconds=duration)},
+                           current_app.config['SECRET_KEY'],
+                           algorithm='HS256')
+        return token
+    
+    @staticmethod
+    def verify_token(token):
+        user_id = jwt.decode(jwt=token, key=current_app.config['SECRET_KEY'], algorithms=['HS256'])['reset_password']
+        user = db.session.get(User, user_id)
+        return user
+        
 
 
 @login.user_loader

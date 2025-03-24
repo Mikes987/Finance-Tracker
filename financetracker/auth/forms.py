@@ -27,3 +27,14 @@ class RegistrationForm(FlaskForm):
         user = db.session.scalar(sa.select(User).where(User.email==email.data))
         if user is not None:
             raise ValidationError('Email already exists')
+
+
+class MailToResetPassword(FlaskForm):
+    email = StringField('Email', validators=[DataRequired()])
+    submit = SubmitField('Reset')
+
+
+class ResetPasswordForm(FlaskForm):
+    password1 = PasswordField('Password', validators=[DataRequired()])
+    password2 = PasswordField('Repeat Password', validators=[DataRequired(), EqualTo('password1')])
+    submit = SubmitField('Reset Password')
