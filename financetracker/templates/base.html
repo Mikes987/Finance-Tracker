@@ -16,6 +16,7 @@
             {% else %}
             <a href="{{ url_for('auth.logout') }}">Logout</a>
             {% endif %}
+            <a href="{{ url_for('main.usersettings', username=current_user.username) }}">Settings</a>
         </nav>
         <hr>
         {% with messages=get_flashed_messages() %}
