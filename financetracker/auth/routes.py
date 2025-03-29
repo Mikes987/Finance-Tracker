@@ -4,7 +4,7 @@ from financetracker import db
 from financetracker.models import User
 from financetracker.email import request_new_password_mail
 from flask import render_template, redirect, url_for, flash
-from flask_login import logout_user, login_user, current_user
+from flask_login import logout_user, login_user, current_user, login_required
 
 
 @bp.route("/login", methods=['GET', 'POST'])
@@ -21,6 +21,7 @@ def login():
 
 
 @bp.route("/logout")
+@login_required
 def logout():
     logout_user()
     return redirect(url_for('main.index'))

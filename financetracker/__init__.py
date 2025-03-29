@@ -18,6 +18,7 @@ def create_app(config_class=Config):
     migrate.init_app(app, db)
     
     login.init_app(app)
+    login.login_view = 'auth.login'
     mail.init_app(app)
     
     from financetracker.main import main_bp

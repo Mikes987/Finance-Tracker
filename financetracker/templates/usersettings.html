@@ -2,5 +2,61 @@
 
 {% block content %}
 <h1>We are on the User Settings page!</h1>
+<p>You currently have {{ val }} Views.</p>
+
+{% if table_content %}
+<table border=1>
+    <tr>
+        <th>Currency</th>
+        <th>Active</th>
+    </tr>
+    {% for row in table_content %}
+    <tr>
+        <td>{{ row[1] }}</td>
+        <td>{% if row[2]==True %} X {% endif %}</td>
+        <td>{% if row[2]==False %}<a href="{{ url_for('main.change_view', view_id=row[0]) }}">Activate</a>{% endif %}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endif %}
+
+<p><a href="{{ url_for('main.create_view') }}">Create new View</a></p>
+
+<h2>Categories</h2>
+
+{% if val==0 %}
+<p>Please create a view first before adding categories.</p>
+{% else %}
+<table border=1>
+    <tr>
+        <td>
+            <table border=1>
+                <tr><th>Income</th></tr>
+                {% for cat in user_categories[0] %}
+                <tr><td>{{ cat }}</td></tr>
+                {% endfor %}
+            </table>
+        </td>
+        <td>
+            <table border=1>
+                <tr><th>Expenses</th></tr>
+                {% for cat in user_categories[1] %}
+                <tr><td>{{ cat }}</td></tr>
+                {% endfor %}
+            </table>
+        </td>
+        <td>
+            <table border=1>
+                <tr><th>Savings</th></tr>
+                {% for cat in user_categories[2] %}
+                <tr><td>{{ cat }}</td></tr>
+                {% endfor %}
+            </table>
+        </td>
+    </tr>
+</table>
+
+<p><a href="{{ url_for('main.create_category', view_id=idx) }}">Create Category</a></p>
+{% endif %}
 
 {% endblock %}
