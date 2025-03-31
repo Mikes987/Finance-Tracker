@@ -1,9 +1,10 @@
 from financetracker.main import main_bp as bp
-from financetracker.models import View, CurrencyExchanges, MainTypes, Category
+from financetracker.models import View, CurrencyExchanges, MainTypes, Category, Tracking
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import current_user, login_required
-from .forms import CreateViewForm, CreateCategoryForm
+from .forms import CreateViewForm, CreateCategoryForm, TrackingForm
 import numpy as np
+from datetime import date, datetime
 
 
 @bp.route('/')
@@ -28,7 +29,6 @@ def usersettings(username: str):
     else:
         idx = 0
         user_categories = None
-    print(user_categories)
     return render_template('usersettings.html', title="User Settings", val=number_of_views, table_content=view_settings, idx=idx, user_categories=user_categories)
 
 
@@ -52,6 +52,7 @@ def change_view(view_id):
 
 
 @bp.route("/create_category/<view_id>", methods=['GET', 'POST'])
+@login_required
 def create_category(view_id):
     form = CreateCategoryForm()
     choices = MainTypes.get_all_types()
@@ -60,3 +61,26 @@ def create_category(view_id):
         Category.create_category(category=form.category_field.data, main_type_string=form.type_field.data, view_id=view_id)
         return redirect(url_for('main.usersettings', username=current_user.username))
     return render_template('create_category.html', title='Create Category', form=form)
+
+@bp.route("/tracking", methods=['GET', 'POST'])
+@login_required
+def tracking():
+    form = TrackingForm()
+    types = MainTypes.get_all_types()
+    current_view = View.get_current_view()
+    categories = Category.get_all_categories(current_view)
+    form.type_field.choices = types
+    form.category_field.choices = categories[0]
+    form.goal_field.choices = categories[2]
+    if form.validate_on_submit():
+        date_entry = form.date_field.data
+        date_entry = datetime.strptime(date_entry, '%Y-%m-%d').date()
+        maintype = form.type_field.data
+        category = form.category_field.data
+        source_target = form.goal_field.data
+        amount = float(form.amount_field.data)
+        comment = form.comment_field.data
+        Tracking.create_tracking(entry_date=date_entry, maintype=maintype, category=category, target_source=source_target, amount=amount, comment=comment)
+        return redirect(url_for('main.tracking'))
+    tracking_data = Tracking.get_all_tracking_data_by_user_and_view()
+    return render_template('tracking.html', title="Tracking", form=form, categories=categories, types=types, data=tracking_data)

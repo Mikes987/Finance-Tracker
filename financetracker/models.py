@@ -7,7 +7,7 @@ from flask_login import UserMixin, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask import current_app
 import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 
 class User(db.Model, UserMixin):
@@ -20,6 +20,7 @@ class User(db.Model, UserMixin):
     
     user_categories: so.WriteOnlyMapped['Category'] = so.relationship(back_populates='user')
     user_views: so.WriteOnlyMapped['View'] = so.relationship(back_populates='user')
+    user_trackings: so.WriteOnlyMapped['Tracking'] = so.relationship(back_populates='tracking_user')
     
     def __repr__(self):
         return f'<User: "{self.username}">'
@@ -72,6 +73,7 @@ class MainTypes(db.Model):
     type: so.Mapped[str] = so.mapped_column(sa.String(32), unique=True)
     
     categories: so.WriteOnlyMapped['Category'] = so.relationship(back_populates='main_type')
+    tracking: so.WriteOnlyMapped['Tracking'] = so.relationship(back_populates='main_type')
     
     def __repr__(self):
         return f"<Type: {self.type}>"
@@ -93,6 +95,7 @@ class Category(db.Model):
     main_type: so.Mapped['MainTypes'] = so.relationship(back_populates='categories')
     user: so.Mapped['User'] = so.relationship(back_populates='user_categories')
     view: so.Mapped['View'] = so.relationship(back_populates='categories')
+    tracking_category: so.WriteOnlyMapped['Tracking'] = so.relationship(back_populates='category_tracking')
     
     def __repr__(self):
         return f'<Category: "{self.category}">'
@@ -195,6 +198,7 @@ class View(db.Model):
     user: so.Mapped['User'] = so.relationship(back_populates='user_views')
     categories: so.WriteOnlyMapped['Category'] = so.relationship(back_populates='view')
     currency: so.Mapped['CurrencyExchanges'] = so.relationship(back_populates='view')
+    view_trackings: so.WriteOnlyMapped['Tracking'] = so.relationship(back_populates='tracking_view')
     
     def __repr__(self):
         return f"<View: {self.id}>"
@@ -202,6 +206,12 @@ class View(db.Model):
     @staticmethod
     def get_number_of_views(userid):
         query = sa.select(sa.func.count(View.id)).where(View.user_id==userid)
+        result = db.session.scalar(query)
+        return result
+    
+    @staticmethod
+    def get_current_view():
+        query = sa.Select(View.id).where(View.user==current_user, View.is_active==True)
         result = db.session.scalar(query)
         return result
     
@@ -231,3 +241,40 @@ class View(db.Model):
         for view in current_views:
             view.is_active = True if view.id == desired_view_id else False
         db.session.commit()
+
+
+class Tracking(db.Model):
+    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    date: so.Mapped[date]
+    user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('users.id'))
+    view_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('views.id'))
+    type_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('maintypes.id'))
+    category_id: so.Mapped[int]
+    amount: so.Mapped[float]
+    source_target_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('categories.id'))
+    comment: so.Mapped[str] = so.mapped_column(sa.String(96))
+    
+    main_type: so.Mapped['MainTypes'] = so.relationship(back_populates='tracking')
+    category_tracking: so.Mapped['Category'] = so.relationship(back_populates='tracking_category')
+    tracking_user: so.Mapped['User'] = so.relationship(back_populates='user_trackings')
+    tracking_view: so.Mapped['View'] = so.relationship(back_populates='view_trackings')
+    
+    @staticmethod
+    def create_tracking(entry_date, maintype, category, target_source, amount, comment):
+        main_type = db.session.scalar(sa.select(MainTypes).where(MainTypes.type==maintype))
+        category = db.session.scalar(sa.select(Category).where(Category.category==category, Category.main_type==main_type, Category.user==current_user))
+        target = db.session.scalar(sa.select(Category).where(Category.category==target_source, Category.main_type_id==3, Category.user==current_user))
+        view = View.get_current_view()
+        new_tracking = Tracking(date=entry_date, tracking_user=current_user, view_id=view, category_id=category.id, main_type=main_type, amount=amount, category_tracking=target, comment=comment)
+        print(new_tracking)
+        db.session.add(new_tracking)
+        db.session.commit()
+        print("Testing if it worked")
+    
+    @staticmethod
+    def get_all_tracking_data_by_user_and_view():
+        aliased_target = so.aliased(Category)
+        query = sa.select(Tracking.date, MainTypes.type, Category.category, Tracking.amount, aliased_target.category, Tracking.comment).select_from(Tracking).join(MainTypes).join(Category, Category.id==Tracking.category_id).join(aliased_target, aliased_target.id==Tracking.source_target_id).order_by(Tracking.date.desc(), Tracking.id.desc())
+        result = db.session.execute(query).all()
+        return result
+        
