@@ -266,10 +266,8 @@ class Tracking(db.Model):
         target = db.session.scalar(sa.select(Category).where(Category.category==target_source, Category.main_type_id==3, Category.user==current_user))
         view = View.get_current_view()
         new_tracking = Tracking(date=entry_date, tracking_user=current_user, view_id=view, category_id=category.id, main_type=main_type, amount=amount, category_tracking=target, comment=comment)
-        print(new_tracking)
         db.session.add(new_tracking)
         db.session.commit()
-        print("Testing if it worked")
     
     @staticmethod
     def get_all_tracking_data_by_user_and_view():
