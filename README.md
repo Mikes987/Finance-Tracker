@@ -68,6 +68,11 @@ However, I came across some issues that motivated me to check for myself if I am
   - **Note**: There are currently no calculations done, your data is simply displayed in a table.
   - The forms for date and currency currently don't follow any logics to ensure these are indeed dates and numbers. Will be implemented, I was recently dealing with an issue with regards to dynamic select fields and had to solve that first (*Income* main type only allows its categories as the other main types do).
 
+#### Other ToDos
+- Check the Config.py file. It is written as such that it uses default values which works in Development environment but you can use your own .env file to provide information.
+- If you want to restore a password, you need to run [aiosmtp](aiosmtpd)
+  - Open a second terminal which connects to the venv and run ```aiosmtpd -n -c aiosmtpd.handlers.Debugging -l localhost:8025```.
+
 
 ## Special Thanks to
 - [The Office Lab](https://www.youtube.com/@theofficelab) for their tutorials.
