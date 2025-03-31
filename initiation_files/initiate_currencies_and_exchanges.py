@@ -1,10 +1,13 @@
 import sys
-sys.path.append(".")
+
+if sys.platform == 'win32':
+    sys.path.append("..")
+else:
+    sys.path.append(".")
 
 
 import subprocess
 import json
-
 from financetracker import create_app
 from financetracker.models import CurrencyUpdateStatus
 

@@ -1,10 +1,14 @@
 import sys
-import os
+
+if sys.platform == 'win32':
+    sys.path.append("..")
+else:
+    sys.path.append(".")
+
+# import os
 
 sys.path.append(".")
 #content = os.listdir(sys.path[-1])
-
-#import financetracker
 
 
 from financetracker import create_app, db
