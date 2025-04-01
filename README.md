@@ -14,8 +14,12 @@ However, I came across some issues that motivated me to check for myself if I am
   - But what If I maintain accounts in different countries with different currencies?
   - In the budget tracker I have this issue solved by using different ones with different currencies.
   - I would like to have all data in one "sheet" though and if different currencies are used, I'd like to have them shown in one chart by calculating with exchange rates.
+- If I tend to buy the same product in a span of years, I want to calculate my personal yearly inflation rate.
+- 
 -   Despite using this project as a practical learning project for python frameworks, I'd like to use my own finance tracker without being too dependent on one particular heavy software such as Excel.
 -   One (rather negligible) aspect is language. What if I want to change the language on the UI simply by choosing that option?
+
+In the end I want to implement elemts of dash into this flask prject which creates tables, stats and graphs based on one table in which the user chooses types like income and expenses with specific categories the user chooses along with amount and user comments.
 
 
 ## Current stage (31.03.2025)
