@@ -4,14 +4,34 @@ from flask import render_template, redirect, url_for, flash, request
 from flask_login import current_user, login_required
 from .forms import CreateViewForm, CreateCategoryForm, TrackingForm
 import numpy as np
+import pandas as pd
 from datetime import date, datetime
+import financetracker.main.tracking_calculations as tc
+from .plotly_graphs import create_date_chart
 
 
 @bp.route('/')
 @bp.route('/index')
 @login_required
 def index():
-    return render_template('index.html', title='Index')
+    tracking_data = Tracking.get_all_tracking_data_by_user_and_view()
+    if not tracking_data.empty:
+        tracking_data_for_graph, savings = tc.create_balance_and_savings_table(tracking_data)
+        date_chart = create_date_chart(tracking_data_for_graph)
+        all_years, all_months, incomes, expenses, savings, savings_until, recent_month, recent_year = tc.create_dashboard_table_summaries_by_year_month(tracking_data)
+    else:
+        savings = []
+        tracking_data = tracking_data.values
+        date_chart = []
+        all_years = np.array([])
+        all_months = []
+        incomes = pd.DataFrame()
+        expenses = pd.DataFrame()
+        savings = pd.DataFrame()
+        savings_until = pd.DataFrame()
+        recent_month = None
+        recent_year = None
+    return render_template('index.html', title='Index', date_chart=date_chart, all_years=all_years, all_months=all_months, incomes=incomes.values, expenses=expenses.values, savings=savings.values, savings_until=savings_until.values, recent_month=recent_month, recent_year=recent_year)
 
 
 @bp.route("/user/<username>")
@@ -83,4 +103,15 @@ def tracking():
         Tracking.create_tracking(entry_date=date_entry, maintype=maintype, category=category, target_source=source_target, amount=amount, comment=comment)
         return redirect(url_for('main.tracking'))
     tracking_data = Tracking.get_all_tracking_data_by_user_and_view()
-    return render_template('tracking.html', title="Tracking", form=form, categories=categories, types=types, data=tracking_data)
+    if not tracking_data.empty:
+        tracking_data, savings = tc.create_balance_and_savings_table(tracking_data)
+    else:
+        savings = []
+    return render_template('tracking.html', title="Tracking", form=form, categories=categories, types=types, data=tracking_data.values, savings=savings)
+
+@bp.route("/delete_tracking_entry/<tracking_id>")
+@login_required
+def delete_tracking(tracking_id):
+    tracking_id = int(float(tracking_id))
+    Tracking.delete_tracking_entry(tracking_id)
+    return redirect(url_for('main.tracking'))

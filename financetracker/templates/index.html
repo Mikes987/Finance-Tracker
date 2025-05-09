@@ -5,4 +5,170 @@
     {% else %}
     <h1>Hello {{ current_user.username }}</h1>
     {% endif %}
+
+    {% if all_years.any() %}
+
+    <label for="years">Year</label>
+    <select id="years" name="years">
+        {% for year in all_years %}
+        {% if year == recent_year %}
+        <option selected value="{{ year }}">{{ year }}</option>
+        {% else %}
+        <option value="{{ year }}">{{ year }}</option>
+        {% endif %}
+        {% endfor %}
+    </select>
+
+    <label for="months">Month</label>
+    <select id="months" name="months">
+        {% for month in all_months %}
+        {% if month == recent_month %}
+        <option selected value="{{ month }}">{{ month }}</option>
+        {% else %}
+        <option value="{{ month }}">{{ month }}</option>
+        {% endif %}
+        {% endfor %}
+    </select>
+
+    <p>
+        <table id="Income">
+            <colgroup>
+                <col span="2">
+                <!--<col span="3" style="visibility: collapse">-->
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>Income</th>
+                    <th>Amount</th>
+                    <th>Year</th>
+                    <th>Month</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in incomes %}
+                <tr class="{{ row[2] }}-{{ row[3] }}">
+                    {% for col in row %}
+                    <td>{{ col }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            <tbody>
+        </table>
+    </p>
+
+    <p>
+        <table id="Expenses">
+            <colgroup>
+                <col span="2">
+                <!--<col span="3" style="visibility: collapse">-->
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>Expenses</th>
+                    <th>Amount</th>
+                    <th>Year</th>
+                    <th>Month</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in expenses %}
+                <tr class="{{ row[2] }}-{{ row[3] }}">
+                    {% for col in row %}
+                    <td>{{ col }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </p>
+
+    <p>
+        <table id="Savings">
+            <colgroup>
+                <col span="2">
+                <!--<col span="3" style="visibility: collapse">-->
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>Savings</th>
+                    <th>Amount</th>
+                    <th>Year</th>
+                    <th>Month</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in savings %}
+                <tr class="{{ row[2] }}-{{ row[3] }}">
+                    {% for col in row %}
+                    <td>{{ col }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </p>
+
+    <div>{{ date_chart | safe }}</div>
+     
+    <p>
+        <table id="Savings_Until">
+            <colgroup>
+                <col span="2">
+                <!--col span="3" style="visibility: collapse">-->
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>Savings until Date</th>
+                    <th>Amount</th>
+                    <th>Year</th>
+                    <th>Month</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in savings_until %}
+                <tr class="{{ row[2] }}-{{ row[3] }}">
+                    {% for col in row %}
+                    <td>{{ col }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </p>
+
+    <p id="demo"></p>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script>
+        
+        $("#months, #years").ready(function(){
+            $("#Savings_Until tbody tr").hide();
+            $("#Savings_Until tbody tr." + "{{ recent_year }}-{{ recent_month }}").show('fast');
+            $("#Income tbody tr").hide();
+            $("#Income tbody tr." + "{{ recent_year }}-{{ recent_month }}").show('fast');
+            $("#Expenses tbody tr").hide();
+            $("#Expenses tbody tr." + "{{ recent_year }}-{{ recent_month }}").show('fast');
+            $("#Savings tbody tr").hide();
+            $("#Savings tbody tr." + "{{ recent_year }}-{{ recent_month }}").show('fast');
+            
+
+            $("#years, #months").change(function(){
+                var val = $("#years").val() + "-" + $("#months").val()
+                $("#Savings_Until tbody tr").hide();
+                $("#Savings_Until tbody tr." + val).show('fast');
+                $("#Income tbody tr").hide();
+                $("#Income tbody tr." + val).show('fast');
+                $("#Expenses tbody tr").hide();
+                $("#Expenses tbody tr." + val).show('fast');
+                $("#Savings tbody tr").hide();
+                $("#Savings tbody tr." + val).show('fast');
+            });
+        });
+    </script>
+
+    {% endif %}
 {% endblock%}

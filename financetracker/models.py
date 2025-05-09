@@ -1,3 +1,4 @@
+import pandas as pd
 import sqlalchemy as sa
 import sqlalchemy.orm as so
 from financetracker import db, login
@@ -273,6 +274,19 @@ class Tracking(db.Model):
     def get_all_tracking_data_by_user_and_view():
         aliased_target = so.aliased(Category)
         query = sa.select(Tracking.date, MainTypes.type, Category.category, Tracking.amount, aliased_target.category, Tracking.comment).select_from(Tracking).join(MainTypes).join(Category, Category.id==Tracking.category_id).join(aliased_target, aliased_target.id==Tracking.source_target_id).order_by(Tracking.date.desc(), Tracking.id.desc())
-        result = db.session.execute(query).all()
+        query2 = query2 = sa.select(Tracking.id, Tracking.date, MainTypes.type, aliased_target.category, Tracking.amount, Category.category.label("Source/Target"), Tracking.comment)\
+            .select_from(Tracking)\
+            .join(MainTypes)\
+            .join(aliased_target, onclause=aliased_target.id==Tracking.category_id)\
+            .join(Category, onclause=Tracking.source_target_id==Category.id)\
+            .order_by(Tracking.date, Tracking.id)
+        # result = db.session.execute(query).all()
+        result = pd.read_sql(sql=query2, con=db.engine)
         return result
+    
+    @staticmethod
+    def delete_tracking_entry(tracking_id: int):
+        query = sa.delete(Tracking).where(Tracking.id==tracking_id)
+        db.session.execute(query)
+        db.session.commit()
         

@@ -3,6 +3,22 @@
 {% block content %}
 <h1>Tracking</h1>
 
+<p>
+    <table border=1>
+        <tr>
+            <th>Category</th>
+            <th>Value</th>
+        </tr>
+        {% for row in savings %}
+        <tr>
+            {% for col in row%}
+            <td>{{ col }}</td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </table>
+</p>
+
 <form action="" method="post" novalidate>
     {{ form.csrf_token }}
     <table border=1>
@@ -13,6 +29,7 @@
             <th>{{ form.amount_field.label }}</th>
             <th>{{ form.goal_field.label }}</th>
             <th>{{ form.comment_field.label }}</th>
+            <th>Balance</th>
         </tr>
         <tr>
             <td>
@@ -46,13 +63,19 @@
                 <br><span style="color: red;">[{{ error }}]</span>
                 {% endfor %}
             </td>
-            <th>{{ form.submit_field }}</th>
+            <td>
+            </td>
+            <td>{{ form.submit_field }}</td>
         </tr>
-        {% if data %}
+        {% if data.any() %}
         {% for row in data %}
         <tr>
             {% for column in row %}
-            <td>{{ column }}
+            {% if loop.index==row|length %}
+            <td><a href="{{ url_for('main.delete_tracking', tracking_id=column) }}">Delete</a></td>
+            {% else %}
+            <td>{{ column }}</td>
+            {% endif %}
             {% endfor %}
         </tr>
         {% endfor %}
