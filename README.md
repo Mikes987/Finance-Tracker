@@ -1,6 +1,10 @@
 # Personal Finance Tracker
 (*Very early alpha*)
 
+### Updates in May 2025:
+- Tracker URL added where user can insert the finances
+- Main URL contains first tables with regards to Income, Expenses and Savings as well as a graph in selected currency and table with savings up-to selected year and month.
+
 ## Project Description
 I am creating a personal finance tracker in the python flask framework. The finance tracker is mostly inspired by [Personal Budget Tracker](https://www.youtube.com/watch?v=eKyAOjH3Crk) on Youtube.
 
