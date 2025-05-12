@@ -2,8 +2,14 @@
 (*Very early alpha*)
 
 ### Updates in May 2025:
+- **Functionalities for the first dashboard done.**
+  - **TODO**:
+  - Correct inputfields in "Tracking" URL
+  - Apply currencies in tables.
+  - Apply connection to currency exchange API when the user logs in (as temporary solution).
 - Tracker URL added where user can insert the finances
 - Main URL contains first tables with regards to Income, Expenses and Savings as well as a graph in selected currency and table with savings up-to selected year and month.
+- Graphs as pie and bar charts added and now dynamic based on what the user chooses as month and Year.
 
 ## Project Description
 I am creating a personal finance tracker in the python flask framework. The finance tracker is mostly inspired by [Personal Budget Tracker](https://www.youtube.com/watch?v=eKyAOjH3Crk) on Youtube.
