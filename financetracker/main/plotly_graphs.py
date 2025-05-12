@@ -7,5 +7,5 @@ import pandas as pd
 def create_date_chart(df: pd.DataFrame):
     # fig = go.Figure([go.Scatter(x=df['date'], y=df['Balance'])])
     df['Balance'] = df['Balance'].astype(int)
-    fig = px.line(df, x='date', y='Balance')
+    fig = px.line(df, x='date', y='Balance', template="plotly_white")
     return fig.to_html(full_html=False)

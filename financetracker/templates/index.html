@@ -140,32 +140,133 @@
         </table>
     </p>
 
-    <p id="demo"></p>
+    <div id="income_pie"></div>
+    <div id="Expenses_pie"></div>
+    <div id="savings_pie"></div>
+    <div id="bar_chart"></div>
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-3.0.1.min.js" charset="utf-8"></script>
     <script>
+
+        divs = ['income_pie', 'Expenses_pie', 'savings_pie']
+        pie_ids = ['Income', 'Expenses', 'Savings']
+        colorsShort = ['greens', 'reds', 'blues']
+
+        greyColor = 'rgb(220, 220, 220)'
+        colors = [{
+            'greens': ['rgb(0, 128, 0)', 'rgb(143, 188, 143)', 'rgb(144, 238, 144)', 'rgb(173, 223, 173)', greyColor],
+            'reds': ['rgb(255, 0, 0)', 'rgb(255, 83, 73)', 'rgb(240, 128, 128)', 'rgb(255, 153, 153)', greyColor],
+            'blues': ['rgb(0, 0, 255)', 'rgb(30, 144, 255)', 'rgb(115, 194, 251)', 'rgb(188, 212, 230)', greyColor]
+        }];
+
+        function createData(i, table_class) {
+            category = pie_ids[i]
+            var categories = []
+            var values = []
+            $("#" + category + " tbody tr." + table_class).each(function() {
+            if ($(this).find("td:first").html() != 'Total') {
+                categories.push($(this).find("td:first").html())
+                values.push($(this).children('td').eq(1).html())
+            }
+
+            });
+            specColor = setDataAndColors(categories, values, colors[0][colorsShort[i]])
+            categories = specColor[0]
+            values = specColor[1]
+            specColor = specColor[2]
+
+            var data = [{
+                values: values,
+                labels: categories,
+                type: 'pie',
+                'marker': {'colors': specColor}
+            }];
+            var layout = {
+                height: 400,
+                width: 500
+            };
+            return [data, layout]
+            //console.log(specColor)
+        }
+
+        function setDataAndColors(cats, vals, colorSet) {
+            colorLengths = vals.length;
+            if (colorLengths<=5) {
+                specColor = colorSet.slice(0, colorLengths);
+            } else {
+                elseCats = cats.slice(4);
+                firstCats = cats.slice(0,4);
+                let sum = 0;
+                vals.slice(4).map(e => sum += Number(e));
+                vals = vals.slice(0,4).concat([sum]);
+                cats = cats.slice(0, 4).concat(['Else']);
+                specColor = colorSet
+            }
+            return [cats, vals, specColor];
+        }
+
+        function createDataForBarChart(type, year, color) {
+            monthStack = [];
+            valueStack = [];
+            $("#" + type + " tbody tr[class*=" + year + "]").each(function() {
+                if ($(this).find("td:first").html() == 'Total') {
+                    valueStack.push($(this).children('td').eq(1).html())
+                    monthStack.push($(this).children('td').eq(3).html())
+                }
+            });
+            result = {
+                x: monthStack,
+                y: valueStack,
+                name: type,
+                type: 'bar',
+                marker: {color: color}
+            }
+            return result;
+        }
         
         $("#months, #years").ready(function(){
+            var table_class = "{{ recent_year }}-{{ recent_month }}"
             $("#Savings_Until tbody tr").hide();
-            $("#Savings_Until tbody tr." + "{{ recent_year }}-{{ recent_month }}").show('fast');
-            $("#Income tbody tr").hide();
-            $("#Income tbody tr." + "{{ recent_year }}-{{ recent_month }}").show('fast');
-            $("#Expenses tbody tr").hide();
-            $("#Expenses tbody tr." + "{{ recent_year }}-{{ recent_month }}").show('fast');
-            $("#Savings tbody tr").hide();
-            $("#Savings tbody tr." + "{{ recent_year }}-{{ recent_month }}").show('fast');
-            
+            $("#Savings_Until tbody tr." + table_class).show('fast');
+
+            /*var incomeStack = createDataForBarChart('Income', "{{ recent_year }}", colors[0]['greens'][0]);
+            var expenseStack = createDataForBarChart('Expenses', "{{ recent_year }}", colors[0]['reds'][0]);
+            var savingsStack = createDataForBarChart('Savings', "{{ recent_year }}", colors[0]['blues'][0]);
+            var barData = [incomeStack, expenseStack, savingsStack];*/
+            var barData = [];
+            var barLayout = {barmode: 'group'};
+
+            for (let i=0; i<divs.length; i++) {
+                var type = pie_ids[i];
+                $("#" + type + " tbody tr").hide();
+                $("#" + type + " tbody tr." + table_class).show('fast');
+
+                var dataAndLayout = createData(i, table_class)
+                Plotly.newPlot(divs[i], dataAndLayout[0], dataAndLayout[1]);
+
+                barStack = createDataForBarChart(type, "{{ recent_year }}", colors[0][colorsShort[i]][0]);
+                barData.push(barStack);
+            }
+            Plotly.newPlot("bar_chart", barData, barLayout);
 
             $("#years, #months").change(function(){
                 var val = $("#years").val() + "-" + $("#months").val()
                 $("#Savings_Until tbody tr").hide();
                 $("#Savings_Until tbody tr." + val).show('fast');
-                $("#Income tbody tr").hide();
-                $("#Income tbody tr." + val).show('fast');
-                $("#Expenses tbody tr").hide();
-                $("#Expenses tbody tr." + val).show('fast');
-                $("#Savings tbody tr").hide();
-                $("#Savings tbody tr." + val).show('fast');
+
+                barData = [];
+                for (let i=0; i<divs.length; i++) {
+                    var type = pie_ids[i];
+                    $("#" + type + " tbody tr").hide();
+                    $("#" + type + " tbody tr." + val).show('fast');
+
+                    var dataAndLayout = createData(i, val)
+                    Plotly.react(divs[i], dataAndLayout[0], dataAndLayout[1]);
+                    barStack = createDataForBarChart(type, $("#years").val(), colors[0][colorsShort[i]][0]);
+                    barData.push(barStack);
+                }
+                Plotly.react("bar_chart", barData, barLayout);
             });
         });
     </script>
