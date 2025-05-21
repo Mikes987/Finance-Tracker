@@ -2,6 +2,7 @@ import pandas as pd
 import sqlalchemy as sa
 import sqlalchemy.orm as so
 from financetracker import db, login
+from financetracker.currency_load_from_api import load_currency_exchange_rates
 import sqlalchemy as sa
 import sqlalchemy.orm as so
 from flask_login import UserMixin, current_user
@@ -9,6 +10,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from flask import current_app
 import jwt
 from datetime import datetime, timedelta, date
+from decimal import Decimal
 
 
 class User(db.Model, UserMixin):
@@ -59,6 +61,13 @@ class User(db.Model, UserMixin):
         user_id = jwt.decode(jwt=token, key=current_app.config['SECRET_KEY'], algorithms=['HS256'])['reset_password']
         user = db.session.get(User, user_id)
         return user
+    
+    def get_my_tracking_data(self):
+        results = Tracking.get_all_tracking_data_by_user_and_view(self.id)
+        return results
+    
+    def get_my_current_view(self):
+        return View.get_current_view()
         
 
 
@@ -82,6 +91,25 @@ class MainTypes(db.Model):
     @staticmethod
     def get_all_types():
         return db.session.scalars(sa.select(MainTypes.type).order_by(MainTypes.id)).all()
+    
+    @staticmethod
+    def add_main_types():
+        types = [
+            {'id': 1, 'type': 'Income'},
+            {'id': 2, 'type': 'Expenses'},
+            {'id': 3, 'type': 'Savings'}
+        ]
+        for t in types:
+            mt = MainTypes(id=t['id'], type=t['type'])
+            db.session.add(mt)
+            db.session.commit()
+        print("Main Types added")
+    
+    @staticmethod
+    def check_for_initial_types():
+        if sum(MainTypes.get_all_types()) == 0:
+            print("Adding Main Types")
+            MainTypes.add_main_types()
 
 
 class Category(db.Model):
@@ -149,6 +177,26 @@ class CurrencyExchanges(db.Model):
             exchange_rate.exchange_value = content[key]
             db.session.add(exchange_rate)
         db.session.commit()
+    
+    @staticmethod
+    def get_current_currency():
+        current_currency_id = View.get_current_currency()
+        query = sa.select(CurrencyExchanges.currency_to_dollar).where(CurrencyExchanges.id==current_currency_id)
+        result = db.session.scalar(query)
+        return result
+    
+    @staticmethod
+    def get_currency_code_by_id(view_id):
+        currency_id = View.get_currency_by_id(view_id)
+        query = sa.select(CurrencyExchanges.currency_to_dollar).where(CurrencyExchanges.id==currency_id)
+        currency_code = db.session.scalar(query)
+        return currency_code
+    
+    @staticmethod
+    def get_exchange_rate_by_currency_code(curr_code):
+        query = sa.select(CurrencyExchanges.exchange_value).where(CurrencyExchanges.currency_to_dollar==curr_code)
+        result = db.session.scalar(query)
+        return result
 
 
 class  CurrencyUpdateStatus(db.Model):
@@ -162,7 +210,8 @@ class  CurrencyUpdateStatus(db.Model):
         return f'<CurrencyUpdateStatus (last update: {self.last_update_string})>'
     
     @staticmethod
-    def update(content):
+    def update_currency_exchanges():
+        content = load_currency_exchange_rates()
         if content['result'] != 'success':
             print("Load from API not successful")
         else:
@@ -242,6 +291,19 @@ class View(db.Model):
         for view in current_views:
             view.is_active = True if view.id == desired_view_id else False
         db.session.commit()
+    
+    @staticmethod
+    def get_current_currency():
+        current_view = View.get_current_view()
+        query = sa.select(View.currency_id).where(View.id==current_view)
+        currency_id = db.session.scalar(query)
+        return currency_id
+    
+    @staticmethod
+    def get_currency_by_id(view_id):
+        query = sa.select(View.currency_id).where(View.id==int(view_id))
+        currency_id = db.session.scalar(query)
+        return currency_id
 
 
 class Tracking(db.Model):
@@ -251,7 +313,8 @@ class Tracking(db.Model):
     view_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('views.id'))
     type_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('maintypes.id'))
     category_id: so.Mapped[int]
-    amount: so.Mapped[float]
+    # amount: so.Mapped[float]
+    amount: so.Mapped[Decimal] = so.mapped_column(sa.types.DECIMAL(precision=2))
     source_target_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('categories.id'))
     comment: so.Mapped[str] = so.mapped_column(sa.String(96))
     
@@ -271,16 +334,16 @@ class Tracking(db.Model):
         db.session.commit()
     
     @staticmethod
-    def get_all_tracking_data_by_user_and_view():
+    def get_all_tracking_data_by_user_and_view(userid):
         aliased_target = so.aliased(Category)
-        query = sa.select(Tracking.date, MainTypes.type, Category.category, Tracking.amount, aliased_target.category, Tracking.comment).select_from(Tracking).join(MainTypes).join(Category, Category.id==Tracking.category_id).join(aliased_target, aliased_target.id==Tracking.source_target_id).order_by(Tracking.date.desc(), Tracking.id.desc())
-        query2 = query2 = sa.select(Tracking.id, Tracking.date, MainTypes.type, aliased_target.category, Tracking.amount, Category.category.label("Source/Target"), Tracking.comment)\
+        # query = sa.select(Tracking.date, MainTypes.type, Category.category, Tracking.amount, aliased_target.category, Tracking.comment).select_from(Tracking).join(MainTypes).join(Category, Category.id==Tracking.category_id).join(aliased_target, aliased_target.id==Tracking.source_target_id).order_by(Tracking.date.desc(), Tracking.id.desc())
+        query2 = query2 = sa.select(Tracking.id, Tracking.date, MainTypes.type, aliased_target.category, Tracking.amount, Category.category.label("Source/Target"), Tracking.comment, Tracking.view_id)\
             .select_from(Tracking)\
             .join(MainTypes)\
             .join(aliased_target, onclause=aliased_target.id==Tracking.category_id)\
             .join(Category, onclause=Tracking.source_target_id==Category.id)\
+            .where(Tracking.user_id==userid)\
             .order_by(Tracking.date, Tracking.id)
-        # result = db.session.execute(query).all()
         result = pd.read_sql(sql=query2, con=db.engine)
         return result
     

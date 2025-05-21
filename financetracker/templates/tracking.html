@@ -12,7 +12,31 @@
         {% for row in savings %}
         <tr>
             {% for col in row%}
+            {% if loop.index==2 %}
+            <td align='right'> {{ "{:0,.2f}".format(col)  + " " + currency_symbol }}</td>
+            {% else %}
             <td>{{ col }}</td>
+            {% endif %}
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </table>
+</p>
+
+<p>
+    <table border=1>
+        <tr>
+            <th>Assets</th>
+            <th>Value</th>
+        </tr>
+        {% for row in full_savings %}
+        <tr>
+            {% for col in row%}
+            {% if loop.index==2 %}
+            <td align='right'> {{ "{:0,.2f}".format(col)  + " " + currency_symbol }}</td>
+            {% else %}
+            <td>{{ col }}</td>
+            {% endif %}
             {% endfor %}
         </tr>
         {% endfor %}
@@ -73,6 +97,10 @@
             {% for column in row %}
             {% if loop.index==row|length %}
             <td><a href="{{ url_for('main.delete_tracking', tracking_id=column) }}">Delete</a></td>
+            {% elif loop.index==1 %}
+            <td>{{ column.strftime('%Y-%m-%d') }}</td>
+            {% elif loop.index==4 or loop.index==7 %}
+            <td align='right'> {{ "{:0,.2f}".format(column)  + " " + currency_symbol }}</td>
             {% else %}
             <td>{{ column }}</td>
             {% endif %}

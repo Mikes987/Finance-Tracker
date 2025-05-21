@@ -14,11 +14,16 @@ from .plotly_graphs import create_date_chart
 @bp.route('/index')
 @login_required
 def index():
-    tracking_data = Tracking.get_all_tracking_data_by_user_and_view()
+    tracking_data = current_user.get_my_tracking_data()
     if not tracking_data.empty:
-        tracking_data_for_graph, savings = tc.create_balance_and_savings_table(tracking_data)
-        date_chart = create_date_chart(tracking_data_for_graph)
-        all_years, all_months, incomes, expenses, savings, savings_until, recent_month, recent_year = tc.create_dashboard_table_summaries_by_year_month(tracking_data)
+        currency_symbol = tc.get_current_currency_symbol()
+        current_view = View.get_current_view()
+        tracking_data_for_graph = tc.create_balance_and_savings_table(tracking_data[tracking_data['view_id']==current_view], current_view)[0]
+        # tracking_data_for_graph = tc.create_balance_and_savings_table(tracking_data)
+        date_chart = create_date_chart(tracking_data_for_graph, currency_symbol)
+        # tc.initiate_dashboard_tables_and_summaries(tracking_data, current_view)
+        # all_years, all_months, incomes, expenses, savings, savings_until, recent_month, recent_year = tc.create_dashboard_table_summaries_by_year_month(tracking_data)
+        all_years, all_months, incomes, expenses, savings, savings_until, recent_month, recent_year, total_savings = tc.initiate_dashboard_tables_and_summaries(tracking_data, current_view)
     else:
         savings = []
         tracking_data = tracking_data.values
@@ -31,7 +36,8 @@ def index():
         savings_until = pd.DataFrame()
         recent_month = None
         recent_year = None
-    return render_template('index.html', title='Index', date_chart=date_chart, all_years=all_years, all_months=all_months, incomes=incomes.values, expenses=expenses.values, savings=savings.values, savings_until=savings_until.values, recent_month=recent_month, recent_year=recent_year)
+        currency_symbol = None
+    return render_template('index.html', title='Index', date_chart=date_chart, all_years=all_years, all_months=all_months, incomes=incomes.values, expenses=expenses.values, savings=savings.values, savings_until=savings_until.values, recent_month=str(recent_month), recent_year=str(recent_year), currency_symbol=currency_symbol, total_savings=total_savings.values)
 
 
 @bp.route("/user/<username>")
@@ -94,20 +100,23 @@ def tracking():
     form.goal_field.choices = categories[2]
     if form.validate_on_submit():
         date_entry = form.date_field.data
-        date_entry = datetime.strptime(date_entry, '%Y-%m-%d').date()
         maintype = form.type_field.data
         category = form.category_field.data
         source_target = form.goal_field.data
-        amount = float(form.amount_field.data)
+        amount = form.amount_field.data
         comment = form.comment_field.data
         Tracking.create_tracking(entry_date=date_entry, maintype=maintype, category=category, target_source=source_target, amount=amount, comment=comment)
         return redirect(url_for('main.tracking'))
-    tracking_data = Tracking.get_all_tracking_data_by_user_and_view()
+    tracking_data = current_user.get_my_tracking_data()
+    currency_symbol = tc.get_current_currency_symbol()
     if not tracking_data.empty:
-        tracking_data, savings = tc.create_balance_and_savings_table(tracking_data)
+        # tracking_data, savings = tc.create_balance_and_savings_table(tracking_data)
+        tracking_data, savings, full_savings = tc.initiate_balance_and_savings_table(tracking_data)
+        print(full_savings)
     else:
         savings = []
-    return render_template('tracking.html', title="Tracking", form=form, categories=categories, types=types, data=tracking_data.values, savings=savings)
+        full_savings = []
+    return render_template('tracking.html', title="Tracking", form=form, categories=categories, types=types, data=tracking_data.values, savings=savings, currency_symbol=currency_symbol, full_savings=full_savings)
 
 @bp.route("/delete_tracking_entry/<tracking_id>")
 @login_required

@@ -1,7 +1,7 @@
 from . import auth_bp as bp
 from .forms import UserLoginForm, RegistrationForm, MailToResetPassword, ResetPasswordForm
 from financetracker import db
-from financetracker.models import User
+from financetracker.models import User, MainTypes, CurrencyUpdateStatus
 from financetracker.email import request_new_password_mail
 from flask import render_template, redirect, url_for, flash
 from flask_login import logout_user, login_user, current_user, login_required
@@ -16,6 +16,9 @@ def login():
             flash('Wrong User Credentials')
             return redirect(url_for('auth.login'))
         login_user(user)
+        
+        # Here for updating currency exchange rates
+        CurrencyUpdateStatus.update_currency_exchanges()
         return redirect(url_for('main.index'))
     return render_template("login.html", form=form, title='Login')
 
@@ -35,6 +38,9 @@ def register():
                          password=form.password.data,
                          email=form.email.data)
         flash('User successfully created.')
+        
+        # Function for 3 Main types
+        MainTypes.check_for_initial_types()
         return redirect(url_for('auth.login'))
     return render_template('register.html', title='Register', form=form)
 

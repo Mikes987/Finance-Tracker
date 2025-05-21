@@ -34,7 +34,7 @@
         <table id="Income">
             <colgroup>
                 <col span="2">
-                <!--<col span="3" style="visibility: collapse">-->
+                <col span="4" style="visibility: collapse">
             </colgroup>
             <thead>
                 <tr>
@@ -49,7 +49,12 @@
                 {% for row in incomes %}
                 <tr class="{{ row[2] }}-{{ row[3] }}">
                     {% for col in row %}
+                    {% if loop.index == 2 %}
+                    <!--<td align='right'> {{ "%.2f"|format(col) }}</td>-->
+                    <td align='right'> {{ "{:0,.2f}".format(col)  + " " + currency_symbol }}</td>
+                    {% else %}
                     <td>{{ col }}</td>
+                    {% endif %}
                     {% endfor %}
                 </tr>
                 {% endfor %}
@@ -61,7 +66,7 @@
         <table id="Expenses">
             <colgroup>
                 <col span="2">
-                <!--<col span="3" style="visibility: collapse">-->
+                <col span="4" style="visibility: collapse">
             </colgroup>
             <thead>
                 <tr>
@@ -76,7 +81,12 @@
                 {% for row in expenses %}
                 <tr class="{{ row[2] }}-{{ row[3] }}">
                     {% for col in row %}
+                    {% if loop.index == 2 %}
+                    <!--<td align='right'> {{ "%.2f"|format(col) }}</td>-->
+                    <td align='right'> {{ "{:0,.2f}".format(col)  + " " + currency_symbol }}</td>
+                    {% else %}
                     <td>{{ col }}</td>
+                    {% endif %}
                     {% endfor %}
                 </tr>
                 {% endfor %}
@@ -88,7 +98,7 @@
         <table id="Savings">
             <colgroup>
                 <col span="2">
-                <!--<col span="3" style="visibility: collapse">-->
+                <col span="4" style="visibility: collapse">
             </colgroup>
             <thead>
                 <tr>
@@ -103,7 +113,13 @@
                 {% for row in savings %}
                 <tr class="{{ row[2] }}-{{ row[3] }}">
                     {% for col in row %}
+                    {% if loop.index == 2 %}
+                    <!--<td align='right'> {{ "%.2f"|format(col) }}</td>-->
+                    <!--<td align='right'> {{ "{:0,.2f}".format(col) }}</td>-->
+                    <td align='right'> {{ "{:0,.2f}".format(col)  + " " + currency_symbol }}</td>
+                    {% else %}
                     <td>{{ col }}</td>
+                    {% endif %}
                     {% endfor %}
                 </tr>
                 {% endfor %}
@@ -117,7 +133,7 @@
         <table id="Savings_Until">
             <colgroup>
                 <col span="2">
-                <!--col span="3" style="visibility: collapse">-->
+                <col span="4" style="visibility: collapse">
             </colgroup>
             <thead>
                 <tr>
@@ -132,7 +148,42 @@
                 {% for row in savings_until %}
                 <tr class="{{ row[2] }}-{{ row[3] }}">
                     {% for col in row %}
+                    {% if loop.index == 2 %}
+                    <td align='right'> {{ "{:0,.2f}".format(col)  + " " + currency_symbol }}</td>
+                    {% else %}
                     <td>{{ col }}</td>
+                    {% endif %}
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </p>
+
+    <p>
+        <table id="Total_Savings">
+            <colgroup>
+                <col span="2">
+                <col span="4" style="visibility: collapse">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>All Assets</th>
+                    <th>Amount</th>
+                    <th>Year</th>
+                    <th>Month</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in total_savings %}
+                <tr class="{{ row[2] }}-{{ row[3] }}">
+                    {% for col in row %}
+                    {% if loop.index == 2 %}
+                    <td align='right'> {{ "{:0,.2f}".format(col)  + " " + currency_symbol }}</td>
+                    {% else %}
+                    <td>{{ col }}</td>
+                    {% endif %}
                     {% endfor %}
                 </tr>
                 {% endfor %}
@@ -167,7 +218,7 @@
             $("#" + category + " tbody tr." + table_class).each(function() {
             if ($(this).find("td:first").html() != 'Total') {
                 categories.push($(this).find("td:first").html())
-                values.push($(this).children('td').eq(1).html())
+                values.push($(this).children('td').eq(5).html())
             }
 
             });
@@ -175,19 +226,24 @@
             categories = specColor[0]
             values = specColor[1]
             specColor = specColor[2]
+            /*
+            formattedNumbers = []
+            for (k=0; k<values.length; k++) {
+                console.log(values[k])
+            }*/
 
             var data = [{
                 values: values,
                 labels: categories,
                 type: 'pie',
-                'marker': {'colors': specColor}
+                'marker': {'colors': specColor},
+                hovertemplate: '%{value:,.2f} {{ currency_symbol }}<extra>%{label}</extra>',
             }];
             var layout = {
                 height: 400,
-                width: 500
+                width: 500,
             };
             return [data, layout]
-            //console.log(specColor)
         }
 
         function setDataAndColors(cats, vals, colorSet) {
@@ -209,15 +265,22 @@
         function createDataForBarChart(type, year, color) {
             monthStack = [];
             valueStack = [];
+            fullMonthStack = Array.from({length: 12}, (_, i) => i + 1);
+            newValueStack = new Array(12).fill(0);
             $("#" + type + " tbody tr[class*=" + year + "]").each(function() {
                 if ($(this).find("td:first").html() == 'Total') {
-                    valueStack.push($(this).children('td').eq(1).html())
+                    valueStack.push($(this).children('td').eq(5).html())
                     monthStack.push($(this).children('td').eq(3).html())
+                }
+                
+                for(i=0; i<monthStack.length;i++) {
+                    newValueStack[monthStack[i]] = valueStack[i];
                 }
             });
             result = {
-                x: monthStack,
-                y: valueStack,
+                //x: fullMonthStack,
+                x: ['Jan', 'Feb', 'Mar', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                y: newValueStack,
                 name: type,
                 type: 'bar',
                 marker: {color: color}
@@ -229,13 +292,17 @@
             var table_class = "{{ recent_year }}-{{ recent_month }}"
             $("#Savings_Until tbody tr").hide();
             $("#Savings_Until tbody tr." + table_class).show('fast');
+            $("#Total_Savings tbody tr").hide();
+            $("#Total_Savings tbody tr." + table_class).show('fast');
 
-            /*var incomeStack = createDataForBarChart('Income', "{{ recent_year }}", colors[0]['greens'][0]);
-            var expenseStack = createDataForBarChart('Expenses', "{{ recent_year }}", colors[0]['reds'][0]);
-            var savingsStack = createDataForBarChart('Savings', "{{ recent_year }}", colors[0]['blues'][0]);
-            var barData = [incomeStack, expenseStack, savingsStack];*/
             var barData = [];
-            var barLayout = {barmode: 'group'};
+            var barLayout = {
+                barmode: 'group',
+                yaxis: {
+                    ticksuffix: " {{ currency_symbol }}",
+                    tickformat: ","
+                }
+            };
 
             for (let i=0; i<divs.length; i++) {
                 var type = pie_ids[i];
@@ -245,7 +312,7 @@
                 var dataAndLayout = createData(i, table_class)
                 Plotly.newPlot(divs[i], dataAndLayout[0], dataAndLayout[1]);
 
-                barStack = createDataForBarChart(type, "{{ recent_year }}", colors[0][colorsShort[i]][0]);
+                var barStack = createDataForBarChart(type, "{{ recent_year }}", colors[0][colorsShort[i]][0]);
                 barData.push(barStack);
             }
             Plotly.newPlot("bar_chart", barData, barLayout);
@@ -254,6 +321,8 @@
                 var val = $("#years").val() + "-" + $("#months").val()
                 $("#Savings_Until tbody tr").hide();
                 $("#Savings_Until tbody tr." + val).show('fast');
+                $("#Total_Savings tbody tr").hide();
+                $("#Total_Savings tbody tr." + val).show('fast');
 
                 barData = [];
                 for (let i=0; i<divs.length; i++) {

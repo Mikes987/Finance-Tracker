@@ -29,4 +29,4 @@ def create_app(config_class=Config):
     
     return app
 
-from . import models
+from . import models, currency_load_from_api
