@@ -112,7 +112,6 @@ def tracking():
     if not tracking_data.empty:
         # tracking_data, savings = tc.create_balance_and_savings_table(tracking_data)
         tracking_data, savings, full_savings = tc.initiate_balance_and_savings_table(tracking_data)
-        print(full_savings)
     else:
         savings = []
         full_savings = []

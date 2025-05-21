@@ -11,37 +11,43 @@ def get_current_currency_symbol():
     return current_currency_symbol
 
 def create_balance_and_savings_table(df: pd.DataFrame, current_view):
-    view = df['view_id'].unique()[0]
-    savings = df[df['type']=='Savings']
-    saving_arr = [df]
-    for index, row in savings.iterrows():
-        df_single = pd.DataFrame({'date': [row['date'], row['date']], 'type': ['Income', 'Expenses'], 'amount': [row['amount'], row['amount']], "Source/Target": [row['category'], row['Source/Target']]})
-        saving_arr.append(df_single)
+    if not df.empty:
+        view = df['view_id'].unique()[0]
+        savings = df[df['type']=='Savings']
+        saving_arr = [df]
+        for index, row in savings.iterrows():
+            df_single = pd.DataFrame({'date': [row['date'], row['date']], 'type': ['Income', 'Expenses'], 'amount': [row['amount'], row['amount']], "Source/Target": [row['category'], row['Source/Target']]})
+            saving_arr.append(df_single)
 
-    df = pd.concat(saving_arr)
-    del saving_arr
-    
-    df['sign'] = np.where(df['type']=='Income', 1, np.where(df['type']=='Expenses', -1, 0))
-    df['curr'] = df['sign'] * df['amount']
-    
-    df_savings = df.groupby(df['Source/Target']).agg(Savings=('curr', 'sum')).reset_index().rename(columns={'Source/Target': 'Category'})
-    df_savings = pd.concat([df_savings, pd.DataFrame({'Category': ['Total'], 'Savings': [sum(df_savings['Savings'])]})], ignore_index=True)
-    
-    df.dropna(inplace=True)
-    
-    if view == current_view:
-        df_sums = df.groupby(df['date']).agg(Curr=('curr', 'sum')).reset_index().sort_values(by=['date'])
-        df_sums['Balance'] = df_sums['Curr'].cumsum()
-        df_sums['Balance'] = df_sums['Balance'].apply(lambda x: round(x, 2))
-        df_sums.drop(columns=['Curr'], inplace=True)
+        df = pd.concat(saving_arr)
+        del saving_arr
         
-        df = df.merge(df_sums).sort_values(by='date', ascending=False)
-        del df_sums
-        df.drop(columns=['sign', 'curr'], inplace=True)
-        df = df.reindex(columns=['date', 'type', 'category', 'amount', 'Source/Target', 'comment', 'Balance', 'id'])
+        df['sign'] = np.where(df['type']=='Income', 1, np.where(df['type']=='Expenses', -1, 0))
+        df['curr'] = df['sign'] * df['amount']
         
-        df['date'] = pd.to_datetime(df['date'])
-        df['id'] = df['id'].astype('int64')
+        df_savings = df.groupby(df['Source/Target']).agg(Savings=('curr', 'sum')).reset_index().rename(columns={'Source/Target': 'Category'})
+        df_savings = pd.concat([df_savings, pd.DataFrame({'Category': ['Total'], 'Savings': [sum(df_savings['Savings'])]})], ignore_index=True)
+        
+        df.dropna(inplace=True)
+        
+        if view == current_view:
+            df_sums = df.groupby(df['date']).agg(Curr=('curr', 'sum')).reset_index().sort_values(by=['date'])
+            df_sums['Balance'] = df_sums['Curr'].cumsum()
+            df_sums['Balance'] = df_sums['Balance'].apply(lambda x: round(x, 2))
+            df_sums.drop(columns=['Curr'], inplace=True)
+            
+            df = df.merge(df_sums).sort_values(by='date', ascending=False)
+            del df_sums
+            df.drop(columns=['sign', 'curr'], inplace=True)
+            df = df.reindex(columns=['date', 'type', 'category', 'amount', 'Source/Target', 'comment', 'Balance', 'id'])
+            
+            df['date'] = pd.to_datetime(df['date'])
+            df['id'] = df['id'].astype('int64')
+    else:
+        print("I should go through here")
+        df_savings = pd.DataFrame({'Category': ['Total'], 'Savings': [0]})
+        
+    print(df_savings)
     
     return df, df_savings.values
 
@@ -50,6 +56,7 @@ def initiate_balance_and_savings_table(df_original: pd.DataFrame):
     current_view = current_user.get_my_current_view()
     df = df_original[df_original['view_id']==current_view]
     result, savings = create_balance_and_savings_table(df, current_view)
+    
     savings_table = [savings[-1].copy()]
     current_currency_code = CurrencyExchanges.get_current_currency()
     current_currency_symbol = get_currency_symbol(current_currency_code)
@@ -111,6 +118,7 @@ def calculate_for_total_year_and_complete_totals(df: pd.DataFrame):
 
 
 def create_dashboard_table_summaries_by_year_month(df: pd.DataFrame):
+    print(df)
     df['date'] = pd.to_datetime(df['date'])
     df['year'] = df['date'].dt.year
     df['month'] = df['date'].dt.month
@@ -203,15 +211,27 @@ def create_dashboard_table_summaries_by_year_month(df: pd.DataFrame):
 
 
 def initiate_dashboard_tables_and_summaries(df: pd.DataFrame, current_view: int):
-    all_years, all_months, incomes, expenses, savings, savings_until, recent_month, recent_year = create_dashboard_table_summaries_by_year_month(df[df['view_id']==current_view].copy())
-    
-    # Get totals from savings_until_table of current view
-    totals = savings_until
-    totals = totals[totals['category']=='Total'].copy()
     current_currency_code = CurrencyExchanges.get_current_currency()
     current_currency_symbol = get_currency_symbol(current_currency_code)
-    totals['category'] = current_currency_symbol + " - Assets"
-    all_totals = [totals]
+    
+    if len(df[df['view_id']==current_view]) > 0:
+        all_years, all_months, incomes, expenses, savings, savings_until, recent_month, recent_year = create_dashboard_table_summaries_by_year_month(df[df['view_id']==current_view].copy())
+        
+        # Get totals from savings_until_table of current view
+        totals = savings_until
+        totals = totals[totals['category']=='Total'].copy()
+        totals['category'] = current_currency_symbol + " - Assets"
+        all_totals = [totals]
+    else:
+        all_totals = []
+        all_years = np.array(['Total'])
+        all_months = ['Total']
+        incomes = pd.DataFrame()
+        expenses = pd.DataFrame()
+        savings = pd.DataFrame()
+        savings_until = pd.DataFrame()
+        recent_month = 'Total'
+        recent_year = 'Total'
     
     # Now get totals from savings_until from the other views.
     current_exchange = CurrencyExchanges.get_exchange_rate_by_currency_code(current_currency_code)

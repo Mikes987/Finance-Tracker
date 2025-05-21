@@ -6,10 +6,14 @@ import pandas as pd
 
 def create_date_chart(df: pd.DataFrame, currency_symbol):
     # df['Balance'] = df['Balance'].astype(int)
-    fig = go.Figure(go.Scatter(x=df['date'],
-                               y=df['Balance'],
-                               hovertemplate='%{x}: <extra> %{y} </extra>'))
-    # fig = px.line(df, x='date', y='Balance', template="plotly_white")
+    if 'Balance' in df.columns.values:
+        fig = go.Figure(go.Scatter(x=df['date'],
+                                y=df['Balance'],
+                                hovertemplate='%{x}: <extra> %{y} </extra>'))
+        # fig = px.line(df, x='date', y='Balance', template="plotly_white")
+    else:
+        fig = go.Figure(go.Scatter(x=[0],
+                                y=[0]))
     
     fig.update_layout(template='plotly_white',
                       title=dict(text="Balance over Time"),
